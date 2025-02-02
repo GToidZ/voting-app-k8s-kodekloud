@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: db
+    app.kubernetes.io/part-of: voting-app
+  name: db
+spec:
+  replicas: 1
+  serviceName: db
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+        - name: db
+          image: postgres:9.4-alpine      # use alpine if able
+          resources:
+            limits:
+              memory: 1G
+              cpu: 500m
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_USER
+                  name: db-config
+            - name: POSTGRES_PASSWORD     # normally, you'd have this as a secret but for development purposes we can do this
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: db-config
+            - name: PGDATA                # preventing the cause of root-overwrite
+              value: /var/lib/postgresql/data/db-data
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: db-data
+          ports:
+            - containerPort: 5432
+  volumeClaimTemplates:                   # let it automatically create volume for us
+    - metadata:
+        name: db-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+spec:
+  selector:
+    app: db
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: db-svc
+  clusterIP: None
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-config
+data:
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+immutable: false

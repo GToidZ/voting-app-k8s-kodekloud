@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: vote
+    app.kubernetes.io/part-of: voting-app
+  name: vote
+spec:
+  replicas: 2   # default: 2 replicas
+  selector:
+    matchLabels:
+      app: vote
+  template:
+    metadata:
+      labels:
+        app: vote
+    spec:
+      containers:
+        - name: vote
+          image: local/voting-app-vote:1
+          resources:
+            limits:
+              memory: 256M
+              cpu: 300m
+          ports:
+            - containerPort: 80
+              name: vote-port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: vote
+  name: vote
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 5000
+      targetPort: vote-port
+      name: vote-svc
+  selector:
+    app: vote

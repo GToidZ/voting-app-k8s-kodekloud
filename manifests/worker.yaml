@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: worker
+    app.kubernetes.io/part-of: voting-app
+  name: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: dockersamples/examplevotingapp_worker    # Quite unsure what Dockerfile to use, so let's use a remote image
+          resources:
+            limits:
+              memory: 256M
+              cpu: 300m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: worker
+  name: worker
+spec:
+  clusterIP: None
+  selector:
+    app: worker
